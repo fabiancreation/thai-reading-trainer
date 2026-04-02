@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { LESSONS } from "@/lib/data/lessons";
 import { SRSCard } from "@/lib/data/types";
 import { useTheme, Theme } from "./ThemeProvider";
+import { reviewCard as srsReview, isDue } from "@/lib/srs";
+import { ALL_GROUPS } from "@/lib/data/groups";
 
 interface FlashCard {
   thai: string;
@@ -15,28 +16,40 @@ interface FlashCard {
 const cc = (c: string, T: Theme) => c === "mid" ? T.mid : c === "high" ? T.high : T.low;
 const CL = (c: string) => c === "mid" ? "MID" : c === "high" ? "HIGH" : "LOW";
 
-function isDue(card: SRSCard | undefined): boolean {
-  if (!card) return true; // new card, never reviewed
-  return new Date(card.due) <= new Date();
+/** For flashcard deck: new cards (no SRS entry) count as due */
+function isFlashcardDue(card: SRSCard | undefined): boolean {
+  if (!card) return true;
+  return isDue(card);
 }
 
 export default function Flashcards() {
   const { T, progress, updateProgress } = useTheme();
 
-  // All cards from completed lessons
-  const allCards: FlashCard[] = useMemo(() =>
-    LESSONS.filter((l) => (progress.done || []).includes(l.id)).flatMap(
-      (l) => [
-        ...l.items.filter((it) => !it.thai.startsWith("-")).map((it) => ({
-          thai: it.thai, pb: it.pb, en: it.en, cls: "cls" in it ? it.cls : undefined,
-        })),
-        ...(l.words || []).map((w) => ({ thai: w.thai, pb: w.pb, en: w.en })),
-      ]
-    ), [progress.done]);
+  // All cards that have SRS entries (from any source: lessons, drills, daily mix)
+  const allCards: FlashCard[] = useMemo(() => {
+    const srsKeys = new Set(Object.keys(progress.srs));
+    if (srsKeys.size === 0) return [];
+    // Build lookup from all groups
+    const cards: FlashCard[] = [];
+    for (const g of ALL_GROUPS) {
+      for (const it of g.items) {
+        if (srsKeys.has(it.thai) && !it.thai.startsWith("-")) {
+          cards.push({
+            thai: it.thai,
+            pb: it.pb,
+            en: it.en,
+            cls: "cls" in it ? it.cls : undefined,
+          });
+          srsKeys.delete(it.thai); // avoid duplicates
+        }
+      }
+    }
+    return cards;
+  }, [progress.srs]);
 
   // Filter to only due cards
   const dueCards = useMemo(() =>
-    allCards.filter((c) => isDue(progress.srs[c.thai])),
+    allCards.filter((c) => isFlashcardDue(progress.srs[c.thai])),
     [allCards, progress.srs]);
 
   const [deck, setDeck] = useState(() => [...dueCards].sort(() => Math.random() - 0.5));
@@ -44,34 +57,11 @@ export default function Flashcards() {
   const [flip, setFlip] = useState(false);
   const [st, setSt] = useState({ r: 0, w: 0 });
 
-  const reviewCard = (thai: string, gotIt: boolean) => {
-    const now = new Date();
-    const existing = progress.srs[thai];
-    let interval: number;
-    let reps: number;
-
-    if (gotIt) {
-      interval = existing ? Math.min(existing.interval * 2, 30) : 1;
-      reps = (existing?.reps || 0) + 1;
-    } else {
-      interval = 0;
-      reps = 0;
-    }
-
-    const due = new Date(now);
-    due.setDate(due.getDate() + interval);
-
-    const updatedSrs: SRSCard = {
-      thai,
-      interval,
-      ease: 2.5,
-      due: due.toISOString(),
-      reps,
-    };
-
+  const reviewCard = (card: FlashCard, gotIt: boolean) => {
+    const category = card.cls ? "consonant" as const : "vowel" as const;
     updateProgress((p) => ({
       ...p,
-      srs: { ...p.srs, [thai]: updatedSrs },
+      srs: { ...p.srs, [card.thai]: srsReview(p.srs[card.thai], gotIt, card.thai, category) },
     }));
   };
 
@@ -87,7 +77,7 @@ export default function Flashcards() {
 
   if (deck.length === 0 || idx >= deck.length) {
     const totalReviewed = st.r + st.w;
-    const nextDueCards = allCards.filter((c) => isDue(progress.srs[c.thai]));
+    const nextDueCards = allCards.filter((c) => isFlashcardDue(progress.srs[c.thai]));
 
     return (
       <div className="fu" style={{ textAlign: "center", padding: "36px 0" }}>
@@ -117,7 +107,7 @@ export default function Flashcards() {
 
   const c = deck[idx];
   const go = (ok: boolean) => {
-    reviewCard(c.thai, ok);
+    reviewCard(c, ok);
     setSt((s) => ({ ...s, [ok ? "r" : "w"]: s[ok ? "r" : "w"] + 1 }));
     setFlip(false);
     setIdx((i) => i + 1);

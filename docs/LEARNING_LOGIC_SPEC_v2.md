@@ -421,74 +421,138 @@ Tapping a group shows two options:
 
 ---
 
-## 8. Implementation Phases
+## 8. Implementation Status (updated 2026-04-02)
 
-### Phase 1: Group Activation + Targeted Practice — DONE (2026-04-02)
-- [x] Restructure home screen into groups (Groups tab with all 17 groups)
-- [x] Add group activation toggle (tap to activate/deactivate)
-- [x] "Drill this group" button on each active group
-- [x] Targeted practice buttons (Consonants / Vowels / Reading / Tones)
-- [x] Anti-confusion logic: separate pools per quiz question
-- [x] Quiz engine refactored to accept arbitrary item pools (not lesson-based)
-- [x] Lessons tab preserved as separate overview with detail drill-down
-- [x] `activeGroups` persisted to Supabase + localStorage
-- [x] Progress stats bar (consonants/vowels) on Groups home screen
+### Phase 1: Group Activation + Targeted Practice — DONE
+- [x] Groups home screen with 17 groups, activation toggles, drill buttons
+- [x] Targeted practice (Consonants / Vowels / Reading / Tones / All Active)
+- [x] "Select all / Deselect all" per category
+- [x] Quiz engine accepts arbitrary item pools
+- [x] Lessons tab preserved, progress stats bar
 
-**Not yet done from Phase 1 spec:**
-- [ ] Reading practice button — UI present but disabled ("Coming soon"), needs syllable generator (Phase 4)
-- [ ] Tones practice button — UI present but disabled ("Coming soon"), needs tone quiz types (Phase 3)
+### Phase 2: SRS + Daily Mix — DONE
+- [x] Full SM-2 SRS (ease factor, intervals 1/3/ease*interval, lapses, leech detection)
+- [x] Daily Mix (70% due / 30% new, 15-25 items, max 5 new per session)
+- [x] Due count + new count on home screen
+- [x] Wrong answer explanation popups with "Got it" dismiss
+- [x] Re-queue wrong items 3-5 positions later
 
-### Phase 2: SRS + Daily Mix
-- [ ] Implement full SM-2 SRS per card (current SRS is simplified: interval doubles on correct, resets on wrong, no ease factor adjustment)
-- [ ] Build daily mix session (due items + new items)
-- [ ] Due count on home screen
-- [ ] Wrong answer explanation popups
-- [ ] Re-queue wrong items within session
+### Phase 3: Difficulty Stars + Quiz Variety — DONE
+- [x] Base difficulty computed from data (same sound, visual similarity, rarity, etc.)
+- [x] Dynamic difficulty adjustment (+1 on wrong, -1 after 3 correct in a row)
+- [x] Stars + "Hard" badge displayed in quiz
+- [x] 7 new quiz types: Char→Class, Odd One Out, Char→Sound, Position, Long/Short, Read Syllable, Build Syllable
+- [x] Adaptive quiz type selection (easy types for new items, hard types for mastered/difficult)
 
-### Phase 3: Difficulty Stars + Quiz Variety
-- [ ] Assign baseDifficulty to all items
-- [ ] Display stars on cards
-- [ ] Dynamic star adjustment after reviews
-- [ ] Add quiz types: Char→Class, Position, Long/Short, Odd One Out
-- [ ] Adaptive quiz type selection based on mastery
+### Phase 4: Reading Practice — LEVEL 1 DONE
+- [x] Syllable generator (consonant + vowel combinations)
+- [x] Read Syllable (Typ 12) / Build Syllable (Typ 13) quiz types
+- [x] อ as silent initial consonant (อี = "ii", not "ɔii")
+- [ ] **Level 2: + Tone marks** — see Future Work below
+- [ ] **Level 3: + Final consonants** — see Future Work below
+- [ ] **Level 4: Multi-syllable words** — see Future Work below
 
-### Phase 4: Reading Practice
-- [ ] Syllable generator from active consonant + vowel pools
-- [ ] Read Syllable / Build Syllable / What Tone quiz types
-- [ ] Progressive difficulty levels
-- [ ] Word vocabulary integration
+### Phase 5: Polish — DONE
+- [x] Streak tracking (consecutive days, displayed on home screen)
+- [x] Session stats (questions, accuracy, duration, unique items)
+- [x] Leech detection + Focus Cards (shown before quizzing leech items)
+- [x] Confusable character warnings in wrong-answer explanations
+- [x] Leech interval cap (max 3 days, status persists until 3x correct)
+- [x] New Item Introduction Cards (info card before first quiz of new character)
 
-### Phase 5: Polish
-- [ ] Streak tracking
-- [ ] Session stats (accuracy, time, items reviewed)
-- [ ] Leech detection + focus cards
-- [ ] Confusable character warnings
-- [ ] Course script import (Option C)
+### Additional features (not in original spec)
+- [x] "Practice All" button (all active items, consonants + vowels mixed)
+- [x] Tone Practice (Typ 15: Class+Type→Tone, Typ 16: Mark+Class→Tone)
+- [x] Pre-generated quiz questions support (for tone rules)
 
 ---
 
-## 9. Handoff Notes (for continuing in a new chat)
+## 9. Future Work: Reading Levels 2-4 + Word Vocabulary
 
-### Architecture after Phase 1
+### Reading Level 2: Tone Marks on Syllables
+**Aufwand: Mittel (1 Session)**
+
+Silben mit Tonzeichen: กา → ก่า (gàa), ก้า (gâa), etc.
+
+Voraussetzungen:
+- Tonzeichen an kombinierte Silbe haengen (Unicode combining: Konsonant + Tonzeichen + Vokal-Teile)
+- Ton berechnen: Konsonant-Klasse + Vokallaenge (lang/kurz) + Tonzeichen → einer von 5 Toenen
+- Romanisierung mit Tondiakritika (Paiboon: à â á ǎ fuer low/falling/high/rising)
+- Tonberechnungsregeln sind bereits als Daten in `lib/data/tones.ts` (TONE_RULES, TONE_MARK_RULES)
+
+Neuer Quiz-Typ 14 (What Tone?): Zeige Silbe mit Tonzeichen → Welcher Ton?
+
+Abhaengigkeit: `tone_marks` Gruppe muss aktiv sein.
+
+### Reading Level 3: Final Consonants
+**Aufwand: Hoch (1-2 Sessions)**
+
+Geschlossene Silben: กาน (gaan), ดิน (din), จับ (jàp).
+
+Voraussetzungen:
+- Schlusskonsonant-Sound-Mapping: Thai hat nur 8 finale Sounds (k, t, p, n, m, ng, y, w), unabhaengig vom Anfangssound des Konsonanten. Z.B. ง/ณ/น am Ende = alle "n".
+- Live/Dead-Erkennung aendert sich (Schlusskonsonant macht die Silbe "dead")
+- Tonberechnung haengt von Live/Dead ab
+- Deutlich mehr Kombinatorik: Anfangskonsonant x Vokal x Schlusskonsonant
+- Neue Datenstruktur fuer finale Konsonant-Sounds
+
+### Reading Level 4: Multi-Syllable Words
+**Aufwand: Datenarbeit + Mittel**
+
+Echte Thai-Woerter aus kuratierter Vokabelliste.
+
+Voraussetzungen:
+- Wortliste mit: Thai, Romanisierung (Paiboon), Bedeutung, Silbentrennung
+- Woerter muessen nur aus gelernten Zeichen bestehen (filtern nach aktiven Gruppen)
+- Kein algorithmisches Problem, reine Datenarbeit
+- Integration in Quiz-System ueber bestehende Infrastruktur (WordItem Typ existiert bereits)
+
+### Word Vocabulary Integration
+**Aufwand: Klein (wenn Wortliste existiert)**
+
+Woerter als eigene Gruppe oder als automatischer Pool wenn genug Zeichen aktiviert sind. Quiz-Typen: Wort lesen → Bedeutung, Bedeutung → Wort waehlen.
+
+---
+
+## 10. Architecture Reference (current state)
 
 **Navigation:** 4 tabs: Lessons | Groups | Tones | SRS (+ dark mode toggle)
 
-**Key files changed/added in Phase 1:**
-- `lib/data/groups.ts` — NEW: defines all 17 character groups (4 consonant, 11 vowel, 2 tone) with IDs, categories, helper functions (`getActiveConsonants`, `getActiveVowels`, `hasActiveConsonants`, etc.)
-- `lib/data/types.ts` — added `activeGroups: string[]` to `UserProgress`
-- `lib/storage.ts` — persists `activeGroups` to Supabase (`active_groups` column) + localStorage
-- `app/components/Home.tsx` — Groups home screen: activation toggles, targeted practice buttons, drill buttons, progress stats
-- `app/components/Quiz.tsx` — refactored: accepts `pool: QuizItem[]` + optional `title` instead of a `Lesson` object
-- `app/components/AppShell.tsx` — new view routing: `home` (groups), `lessons` (list), `lesson` (detail), `tones`, `flash`, `practice`
-- `app/components/Lesson.tsx` — passes `pool` to Quiz instead of `lesson`
-- `data/002_add_active_groups.sql` — migration to add `active_groups text[]` column to Supabase
+**Practice modes:** Daily Mix, All Active, Consonants, Vowels, Reading, Tones, Group Drill
 
-**Group IDs:** `con_mid`, `con_high`, `con_low_paired`, `con_low_sonorant`, `vow_aa_a`, `vow_ii_i`, `vow_uu_u`, `vow_ʉʉ_ʉ`, `vow_ee_e`, `vow_ɛɛ_ɛ`, `vow_oo_o`, `vow_ɔɔ_ɔ`, `vow_əə_ə`, `vow_diphthongs`, `vow_special`, `tone_rules`, `tone_marks`
+**Quiz types (11 active):**
+| ID | Type | Category |
+|----|------|----------|
+| 1 | Name→Thai | Consonants |
+| 2 | Thai→Name | Consonants |
+| 3 | Char→Class | Consonants (≥2 classes) |
+| 5 | Odd One Out | Consonants (≥2 classes) |
+| 6 | Char→Sound | Consonants |
+| 7 | Name→Thai | Vowels |
+| 8 | Thai→Name | Vowels |
+| 9 | Position | Vowels |
+| 10 | Long/Short | Vowels (with long/short) |
+| 12 | Read Syllable | Reading |
+| 13 | Build Syllable | Reading |
+| 15 | Class+Type→Tone | Tones (rules) |
+| 16 | Mark+Class→Tone | Tones (marks) |
 
-**Data flow:** User toggles group → `updateProgress` updates `activeGroups[]` → saved to Supabase/localStorage → practice buttons read from `activeGroups` to build item pools → Quiz receives pool directly
+**Key files:**
+- `lib/srs.ts` — SM-2 algorithm, difficulty tracking, daily mix builder, explanations
+- `lib/quiz-types.ts` — Quiz type system, adaptive selection, question generation
+- `lib/syllables.ts` — Syllable combination engine (consonant + vowel → Thai + romanization)
+- `lib/data/tones.ts` — Tone rule data + tone quiz question generator
+- `lib/data/difficulty.ts` — Base difficulty map, confusable character detection
+- `lib/streak.ts` — Consecutive day streak tracking
+- `lib/data/groups.ts` — 17 character groups, helper functions
+- `lib/data/types.ts` — All TypeScript interfaces (SRSCard, LessonItem, SyllableItem, etc.)
+- `lib/storage.ts` — Supabase + localStorage persistence
+- `app/components/Quiz.tsx` — Generic quiz: adaptive types, stats, focus cards, intro cards, explanations
+- `app/components/Home.tsx` — Group management, practice buttons, streak, due counts
+- `app/components/AppShell.tsx` — View routing, SRS answer handling, streak updates
 
-**Current quiz types (2 only):** Name→Char, Char→Name. More quiz types planned in Phase 3.
+**SRS fields:** thai, interval, ease, due, reps, lapses, category, status, difficulty, consecutiveCorrect
 
-**Current SRS (simplified):** Interval doubles on correct (max 30 days), resets to 0 on wrong. No ease factor adjustment yet. Full SM-2 planned for Phase 2.
+**UserProgress:** done[], srs{}, activeGroups[], streak?{current, lastPracticeDate}
 
-**Supabase table `user_progress`:** `user_id text`, `completed_lessons integer[]`, `srs_cards jsonb`, `active_groups text[]`, `preferences jsonb`, timestamps. Single user "fabian" for now.
+**Supabase table `user_progress`:** user_id, completed_lessons, srs_cards (jsonb), active_groups (text[]), preferences (jsonb incl. dark + streak). Single user "fabian".

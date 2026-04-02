@@ -32,7 +32,16 @@ export interface TheoryItem {
   text: string;
 }
 
-export type LessonItem = ConsonantItem | VowelItem | ToneMarkItem;
+export interface SyllableItem {
+  thai: string;
+  pb: string;
+  en: string;
+  type: "syllable";
+  consonant: ConsonantItem;
+  vowel: VowelItem;
+}
+
+export type LessonItem = ConsonantItem | VowelItem | ToneMarkItem | SyllableItem;
 
 export interface Lesson {
   id: number;
@@ -45,11 +54,20 @@ export interface Lesson {
   tip?: string;
 }
 
+export interface StreakData {
+  current: number;
+  lastPracticeDate: string; // "YYYY-MM-DD"
+}
+
 export interface UserProgress {
   done: number[];
   srs: Record<string, SRSCard>;
   activeGroups: string[];
+  streak?: StreakData;
 }
+
+export type SRSStatus = "new" | "learning" | "review" | "leech";
+export type SRSCategory = "consonant" | "vowel" | "tone_mark" | "syllable";
 
 export interface SRSCard {
   thai: string;
@@ -57,4 +75,9 @@ export interface SRSCard {
   ease: number;
   due: string;
   reps: number;
+  lapses: number;
+  category: SRSCategory;
+  status: SRSStatus;
+  difficulty: number;
+  consecutiveCorrect: number;
 }

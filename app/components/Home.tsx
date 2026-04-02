@@ -12,14 +12,19 @@ import {
   getActiveConsonants,
   getActiveVowels,
 } from "@/lib/data/groups";
+import { getDueCount, getNewItems } from "@/lib/srs";
 
 type PracticeMode =
   | { kind: "consonants" }
   | { kind: "vowels" }
+  | { kind: "all" }
+  | { kind: "reading" }
+  | { kind: "tones" }
   | { kind: "group"; groupId: string };
 
 interface HomeProps {
   onPractice: (mode: PracticeMode) => void;
+  onDailyMix: () => void;
 }
 
 const cc = (c: string, T: Theme) =>
@@ -27,9 +32,12 @@ const cc = (c: string, T: Theme) =>
 
 export type { PracticeMode };
 
-export default function Home({ onPractice }: HomeProps) {
+export default function Home({ onPractice, onDailyMix }: HomeProps) {
   const { T, progress, updateProgress } = useTheme();
   const active = progress.activeGroups || [];
+
+  const dueCount = getDueCount(progress.srs, active);
+  const newCount = getNewItems(active, progress.srs).length;
 
   const toggleGroup = (id: string) => {
     updateProgress((p) => {
@@ -41,6 +49,19 @@ export default function Home({ onPractice }: HomeProps) {
     });
   };
 
+  const toggleAllGroups = (groupIds: string[], activate: boolean) => {
+    updateProgress((p) => {
+      const cur = p.activeGroups || [];
+      if (activate) {
+        const next = [...new Set([...cur, ...groupIds])];
+        return { ...p, activeGroups: next };
+      } else {
+        const remove = new Set(groupIds);
+        return { ...p, activeGroups: cur.filter((g) => !remove.has(g)) };
+      }
+    });
+  };
+
   const conCount = getActiveConsonants(active).length;
   const vowCount = getActiveVowels(active).length;
   const hasCon = hasActiveConsonants(active);
@@ -48,8 +69,49 @@ export default function Home({ onPractice }: HomeProps) {
   const totalActive = ALL_GROUPS.filter((g) => active.includes(g.id))
     .reduce((n, g) => n + g.items.length, 0);
 
+  const streakDays = progress.streak?.current ?? 0;
+
   return (
     <div className="fu">
+      {/* Streak */}
+      {streakDays > 0 && (
+        <div style={{ textAlign: "center", marginBottom: 16, padding: "10px", background: T.sf, borderRadius: 10, border: "1px solid " + T.bd }}>
+          <span style={{ fontSize: 20 }}>{"\uD83D\uDD25"}</span>
+          <span style={{ fontSize: 17, fontWeight: 700, marginLeft: 6 }}>
+            {streakDays} day{streakDays !== 1 ? "s" : ""}
+          </span>
+        </div>
+      )}
+
+      {/* Daily Mix */}
+      {totalActive > 0 && (
+        <div style={{ marginBottom: 16 }}>
+          <button
+            className="bt"
+            onClick={onDailyMix}
+            style={{
+              width: "100%",
+              background: T.ac,
+              color: "#fff",
+              borderRadius: 12,
+              padding: "16px 18px",
+              textAlign: "left",
+            }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div>
+                <div style={{ fontSize: 17, fontWeight: 700 }}>Daily Mix</div>
+                <div style={{ fontSize: 13, opacity: 0.85, marginTop: 2 }}>
+                  {dueCount > 0 ? `${dueCount} due` : "No reviews due"}
+                  {newCount > 0 ? ` \u00B7 ${newCount} new` : ""}
+                </div>
+              </div>
+              <div style={{ fontSize: 24 }}>{"\u25B6"}</div>
+            </div>
+          </button>
+        </div>
+      )}
+
       {/* Practice buttons */}
       {totalActive > 0 && (
         <div style={{ marginBottom: 24 }}>
@@ -57,6 +119,13 @@ export default function Home({ onPractice }: HomeProps) {
             Targeted Practice
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+            <PracticeButton
+              T={T}
+              label="All Active"
+              sub={`${totalActive} cards`}
+              disabled={totalActive < 2}
+              onClick={() => onPractice({ kind: "all" })}
+            />
             <PracticeButton
               T={T}
               label="Consonants"
@@ -76,16 +145,14 @@ export default function Home({ onPractice }: HomeProps) {
               label="Reading"
               sub={hasCon && hasVow ? "Syllables" : "Need both"}
               disabled={!hasCon || !hasVow}
-              onClick={() => {}}
-              comingSoon={!(hasCon && hasVow)}
+              onClick={() => onPractice({ kind: "reading" })}
             />
             <PracticeButton
               T={T}
               label="Tones"
-              sub="Rules"
-              disabled={!active.includes("tone_rules")}
-              onClick={() => {}}
-              comingSoon
+              sub={active.includes("tone_rules") || active.includes("tone_marks") ? "Rules & Marks" : "Activate tone group"}
+              disabled={!active.includes("tone_rules") && !active.includes("tone_marks")}
+              onClick={() => onPractice({ kind: "tones" })}
             />
           </div>
         </div>
@@ -116,6 +183,7 @@ export default function Home({ onPractice }: HomeProps) {
         groups={CONSONANT_GROUPS}
         active={active}
         onToggle={toggleGroup}
+        onToggleAll={toggleAllGroups}
         onDrill={(id) => onPractice({ kind: "group", groupId: id })}
       />
       <GroupSection
@@ -124,6 +192,7 @@ export default function Home({ onPractice }: HomeProps) {
         groups={VOWEL_GROUPS}
         active={active}
         onToggle={toggleGroup}
+        onToggleAll={toggleAllGroups}
         onDrill={(id) => onPractice({ kind: "group", groupId: id })}
       />
       <GroupSection
@@ -132,6 +201,7 @@ export default function Home({ onPractice }: HomeProps) {
         groups={TONE_GROUPS}
         active={active}
         onToggle={toggleGroup}
+        onToggleAll={toggleAllGroups}
         onDrill={(id) => onPractice({ kind: "group", groupId: id })}
       />
 
@@ -177,14 +247,27 @@ function PracticeButton({ T, label, sub, disabled, onClick, comingSoon }: {
   );
 }
 
-function GroupSection({ T, title, groups, active, onToggle, onDrill }: {
+function GroupSection({ T, title, groups, active, onToggle, onToggleAll, onDrill }: {
   T: Theme; title: string; groups: CharacterGroup[]; active: string[];
-  onToggle: (id: string) => void; onDrill: (id: string) => void;
+  onToggle: (id: string) => void; onToggleAll: (groupIds: string[], activate: boolean) => void; onDrill: (id: string) => void;
 }) {
+  const groupIds = groups.filter((g) => g.items.length > 0).map((g) => g.id);
+  const allActive = groupIds.length > 0 && groupIds.every((id) => active.includes(id));
   return (
     <div style={{ marginBottom: 20 }}>
-      <div style={{ fontSize: 12, color: T.td, textTransform: "uppercase", letterSpacing: 1, marginBottom: 8, fontWeight: 600 }}>
-        {title}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+        <div style={{ fontSize: 12, color: T.td, textTransform: "uppercase", letterSpacing: 1, fontWeight: 600 }}>
+          {title}
+        </div>
+        {groupIds.length > 1 && (
+          <button
+            className="bt"
+            onClick={() => onToggleAll(groupIds, !allActive)}
+            style={{ fontSize: 11, color: T.ac, background: "none", fontWeight: 600 }}
+          >
+            {allActive ? "Deselect all" : "Select all"}
+          </button>
+        )}
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
         {groups.map((g) => {

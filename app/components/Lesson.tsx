@@ -5,6 +5,7 @@ import { LESSONS } from "@/lib/data/lessons";
 import { LessonItem } from "@/lib/data/types";
 import { useTheme, Theme } from "./ThemeProvider";
 import Quiz from "./Quiz";
+import { reviewCard, inferCategory } from "@/lib/srs";
 
 const cc = (c: string, T: Theme) => c === "mid" ? T.mid : c === "high" ? T.high : T.low;
 const CL = (c: string) => c === "mid" ? "MID" : c === "high" ? "HIGH" : "LOW";
@@ -16,7 +17,7 @@ interface LessonProps {
 }
 
 export default function Lesson({ lessonIndex, back, next }: LessonProps) {
-  const { T, updateProgress } = useTheme();
+  const { T, progress, updateProgress } = useTheme();
   const l = LESSONS[lessonIndex];
   const [step, setStep] = useState<"learn" | "practice" | "done">("learn");
 
@@ -101,7 +102,21 @@ export default function Lesson({ lessonIndex, back, next }: LessonProps) {
         </>
       )}
 
-      {step === "practice" && <Quiz pool={[...l.items, ...(l.words || [])]} title={l.title} onDone={done} />}
+      {step === "practice" && (
+        <Quiz
+          pool={[...l.items, ...(l.words || [])]}
+          srs={progress.srs}
+          title={l.title}
+          onDone={done}
+          onAnswer={(item, correct) => {
+            const cat = inferCategory(item as LessonItem);
+            updateProgress((p) => ({
+              ...p,
+              srs: { ...p.srs, [item.thai]: reviewCard(p.srs[item.thai], correct, item.thai, cat) },
+            }));
+          }}
+        />
+      )}
 
       {step === "done" && (
         <div className="fu" style={{ textAlign: "center", padding: "36px 0" }}>
