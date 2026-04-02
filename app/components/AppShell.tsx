@@ -76,7 +76,7 @@ export default function AppShell() {
           </div>
         </div>
         <div style={{ display: "flex", gap: 5, alignItems: "center" }}>
-          {([["Groups", "home"], ["Lessons", "lessons"], ["Tones", "tones"], ["SRS", "flash"]] as [string, string][]).map(([l, v]) => (
+          {([["Lessons", "lessons"], ["Groups", "home"], ["Tones", "tones"], ["SRS", "flash"]] as [string, string][]).map(([l, v]) => (
             <button
               key={v}
               className="bt"
