@@ -22,8 +22,6 @@ type View =
   | { kind: "flash" }
   | { kind: "practice"; mode: PracticeMode };
 
-type NavTab = "home" | "tones" | "flash";
-
 export default function AppShell() {
   const { dark, toggleDark, T, loading, progress } = useTheme();
   const [view, setView] = useState<View>({ kind: "home" });
@@ -37,7 +35,7 @@ export default function AppShell() {
   }
 
   const activeGroups = progress.activeGroups || [];
-  const navView: NavTab = view.kind === "tones" ? "tones" : view.kind === "flash" ? "flash" : "home";
+  const navView = view.kind === "home" ? "home" : view.kind === "tones" ? "tones" : view.kind === "flash" ? "flash" : view.kind === "lesson" ? "lessons" : "home";
 
   function getPracticePool(mode: PracticeMode) {
     switch (mode.kind) {
@@ -77,12 +75,13 @@ export default function AppShell() {
           </div>
         </div>
         <div style={{ display: "flex", gap: 5, alignItems: "center" }}>
-          {([["Groups", "home"], ["Tones", "tones"], ["SRS", "flash"]] as [string, NavTab][]).map(([l, v]) => (
+          {([["Groups", "home"], ["Lessons", "lessons"], ["Tones", "tones"], ["SRS", "flash"]] as [string, string][]).map(([l, v]) => (
             <button
               key={v}
               className="bt"
               onClick={() => {
                 if (v === "home") setView({ kind: "home" });
+                else if (v === "lessons") setView({ kind: "lesson", index: 0 });
                 else if (v === "tones") setView({ kind: "tones" });
                 else if (v === "flash") setView({ kind: "flash" });
               }}
@@ -107,10 +106,7 @@ export default function AppShell() {
       {/* Main */}
       <main style={{ maxWidth: 700, margin: "0 auto", padding: "18px 16px 80px" }}>
         {view.kind === "home" && (
-          <Home
-            onPractice={(mode) => setView({ kind: "practice", mode })}
-            openLesson={(i) => setView({ kind: "lesson", index: i })}
-          />
+          <Home onPractice={(mode) => setView({ kind: "practice", mode })} />
         )}
         {view.kind === "lesson" && (
           <Lesson
