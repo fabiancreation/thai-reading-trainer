@@ -1,10 +1,7 @@
-import { getSession } from "./auth";
+import { getSessionSync } from "./auth";
 
-// Dynamic user ID from session, fallback to "fabian" for backwards compatibility
+// Dynamic user ID from Supabase Auth session
 export function getUserId(): string {
-  const session = getSession();
-  return session?.username ?? "fabian";
+  const session = getSessionSync();
+  return session?.id ?? "anonymous";
 }
-
-// Legacy export for existing code that imports USER_ID directly
-export const USER_ID = "fabian";

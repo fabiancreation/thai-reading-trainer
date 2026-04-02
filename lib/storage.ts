@@ -31,7 +31,7 @@ function localSave(pg: UserProgress, dk: boolean) {
 
 export async function loadProgress(): Promise<UserProgress> {
   const userId = getUserId();
-  if (!supabase) return localLoad().pg;
+  if (!supabase || userId === "anonymous") return localLoad().pg;
   try {
     const { data } = await supabase
       .from("user_progress")
@@ -53,7 +53,7 @@ export async function loadProgress(): Promise<UserProgress> {
 export async function saveProgress(progress: UserProgress, dark: boolean): Promise<void> {
   const userId = getUserId();
   localSave(progress, dark);
-  if (!supabase) return;
+  if (!supabase || userId === "anonymous") return;
   try {
     await supabase.from("user_progress").upsert({
       user_id: userId,
@@ -70,7 +70,7 @@ export async function saveProgress(progress: UserProgress, dark: boolean): Promi
 
 export async function loadDarkMode(): Promise<boolean> {
   const userId = getUserId();
-  if (!supabase) return localLoad().dk;
+  if (!supabase || userId === "anonymous") return localLoad().dk;
   try {
     const { data } = await supabase
       .from("user_progress")

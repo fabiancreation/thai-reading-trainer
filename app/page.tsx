@@ -6,7 +6,7 @@ import Link from "next/link";
 
 export default function LandingPage() {
   const [loggedIn, setLoggedIn] = useState(false);
-  useEffect(() => { setLoggedIn(!!getSession()); }, []);
+  useEffect(() => { getSession().then((s) => setLoggedIn(!!s)); }, []);
 
   return (
     <div style={{

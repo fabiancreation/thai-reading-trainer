@@ -2,22 +2,23 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { getSession, logout } from "@/lib/auth";
+import { getSession, logout, AppUser } from "@/lib/auth";
 import AppShell from "../components/AppShell";
 
 export default function AppPage() {
   const router = useRouter();
+  const [user, setUser] = useState<AppUser | null>(null);
   const [ready, setReady] = useState(false);
-  const [user, setUser] = useState<{ displayName: string } | null>(null);
 
   useEffect(() => {
-    const session = getSession();
-    if (!session) {
-      router.push("/login");
-    } else {
-      setUser({ displayName: session.displayName });
-      setReady(true);
-    }
+    getSession().then((session) => {
+      if (!session) {
+        router.push("/login");
+      } else {
+        setUser(session);
+        setReady(true);
+      }
+    });
   }, [router]);
 
   if (!ready) {
@@ -31,7 +32,7 @@ export default function AppPage() {
   return (
     <AppShell
       userName={user?.displayName}
-      onLogout={() => { logout(); router.push("/"); }}
+      onLogout={async () => { await logout(); router.push("/"); }}
     />
   );
 }

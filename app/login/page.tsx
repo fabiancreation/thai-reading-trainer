@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { login, createAccount, getSession } from "@/lib/auth";
 import Link from "next/link";
@@ -13,12 +13,17 @@ export default function LoginPage() {
   const [displayName, setDisplayName] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [checking, setChecking] = useState(true);
 
   // Redirect if already logged in
-  if (typeof window !== "undefined" && getSession()) {
-    router.push("/app");
-    return null;
-  }
+  useEffect(() => {
+    getSession().then((s) => {
+      if (s) router.push("/app");
+      else setChecking(false);
+    });
+  }, [router]);
+
+  if (checking) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
