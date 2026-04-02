@@ -3,7 +3,7 @@ import { UserProgress } from "./data/types";
 import { USER_ID } from "./user";
 
 const STORAGE_KEY = "thai-rt-" + USER_ID;
-const DEFAULT_PROGRESS: UserProgress = { done: [], srs: {} };
+const DEFAULT_PROGRESS: UserProgress = { done: [], srs: {}, activeGroups: [] };
 
 function localLoad(): { pg: UserProgress; dk: boolean } {
   if (typeof window === "undefined") return { pg: DEFAULT_PROGRESS, dk: false };
@@ -31,13 +31,14 @@ export async function loadProgress(): Promise<UserProgress> {
   try {
     const { data } = await supabase
       .from("user_progress")
-      .select("completed_lessons, srs_cards")
+      .select("completed_lessons, srs_cards, active_groups")
       .eq("user_id", USER_ID)
       .single();
     if (!data) return localLoad().pg;
     return {
       done: data.completed_lessons || [],
       srs: data.srs_cards || {},
+      activeGroups: data.active_groups || [],
     };
   } catch {
     return localLoad().pg;
@@ -52,6 +53,7 @@ export async function saveProgress(progress: UserProgress, dark: boolean): Promi
       user_id: USER_ID,
       completed_lessons: progress.done,
       srs_cards: progress.srs,
+      active_groups: progress.activeGroups,
       preferences: { dark },
       updated_at: new Date().toISOString(),
     });

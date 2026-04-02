@@ -101,7 +101,7 @@ export default function Lesson({ lessonIndex, back, next }: LessonProps) {
         </>
       )}
 
-      {step === "practice" && <Quiz lesson={l} onDone={done} />}
+      {step === "practice" && <Quiz pool={[...l.items, ...(l.words || [])]} title={l.title} onDone={done} />}
 
       {step === "done" && (
         <div className="fu" style={{ textAlign: "center", padding: "36px 0" }}>

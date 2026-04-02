@@ -39,7 +39,7 @@ export function useTheme() {
 
 export default function ThemeProvider({ children }: { children: ReactNode }) {
   const [dark, setDark] = useState(false);
-  const [progress, setProgress] = useState<UserProgress>({ done: [], srs: {} });
+  const [progress, setProgress] = useState<UserProgress>({ done: [], srs: {}, activeGroups: [] });
   const [loading, setLoading] = useState(true);
   const T = dark ? DK : LT;
 

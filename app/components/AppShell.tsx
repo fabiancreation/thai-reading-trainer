@@ -4,16 +4,27 @@ import { useState } from "react";
 import { LESSONS } from "@/lib/data/lessons";
 import { useTheme } from "./ThemeProvider";
 import Home from "./Home";
+import type { PracticeMode } from "./Home";
 import Lesson from "./Lesson";
 import ToneTable from "./ToneTable";
 import Flashcards from "./Flashcards";
+import Quiz from "./Quiz";
+import {
+  ALL_GROUPS,
+  getActiveConsonants,
+  getActiveVowels,
+} from "@/lib/data/groups";
 
-type View = "home" | "lesson" | "tones" | "flash";
+type View =
+  | { kind: "home" }
+  | { kind: "lesson"; index: number }
+  | { kind: "tones" }
+  | { kind: "flash" }
+  | { kind: "practice"; mode: PracticeMode };
 
 export default function AppShell() {
-  const { dark, toggleDark, T, loading } = useTheme();
-  const [view, setView] = useState<View>("home");
-  const [lessonIndex, setLessonIndex] = useState(0);
+  const { dark, toggleDark, T, loading, progress } = useTheme();
+  const [view, setView] = useState<View>({ kind: "home" });
 
   if (loading) {
     return (
@@ -23,11 +34,40 @@ export default function AppShell() {
     );
   }
 
+  const activeGroups = progress.activeGroups || [];
+  const navView = view.kind === "home" ? "home" : view.kind === "tones" ? "tones" : view.kind === "flash" ? "flash" : view.kind === "lesson" ? "lessons" : "home";
+
+  function getPracticePool(mode: PracticeMode) {
+    switch (mode.kind) {
+      case "consonants":
+        return getActiveConsonants(activeGroups);
+      case "vowels":
+        return getActiveVowels(activeGroups);
+      case "group": {
+        const group = ALL_GROUPS.find((g) => g.id === mode.groupId);
+        return group ? group.items : [];
+      }
+    }
+  }
+
+  function getPracticeTitle(mode: PracticeMode): string {
+    switch (mode.kind) {
+      case "consonants":
+        return "Consonant Drill";
+      case "vowels":
+        return "Vowel Drill";
+      case "group": {
+        const group = ALL_GROUPS.find((g) => g.id === mode.groupId);
+        return group ? group.name : "Drill";
+      }
+    }
+  }
+
   return (
     <div style={{ background: T.bg, minHeight: "100vh", fontFamily: "system-ui,-apple-system,sans-serif", color: T.tx, transition: "background .3s,color .3s" }}>
       {/* Header */}
       <header style={{ background: T.sf, borderBottom: "1px solid " + T.bd, padding: "12px 16px", display: "flex", alignItems: "center", justifyContent: "space-between", position: "sticky", top: 0, zIndex: 100 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }} onClick={() => setView("home")}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }} onClick={() => setView({ kind: "home" })}>
           <span style={{ fontSize: 24, fontWeight: 700, color: T.ac }}>{"\u0e01"}</span>
           <div>
             <div style={{ fontSize: 16, fontWeight: 700 }}>{"\u0e2d\u0e48\u0e32\u0e19\u0e44\u0e17\u0e22"}</div>
@@ -35,30 +75,68 @@ export default function AppShell() {
           </div>
         </div>
         <div style={{ display: "flex", gap: 5, alignItems: "center" }}>
-          {([["Lessons", "home"], ["Tones", "tones"], ["SRS", "flash"]] as [string, View][]).map(([l, v]) => (
-            <button key={v} className="bt" onClick={() => setView(v)} style={{ background: view === v ? T.ac : "transparent", color: view === v ? (dark ? T.bg : "#fff") : T.td, padding: "6px 13px", borderRadius: 7, fontSize: 13, fontWeight: 600 }}>{l}</button>
+          {([["Groups", "home"], ["Lessons", "lessons"], ["Tones", "tones"], ["SRS", "flash"]] as [string, string][]).map(([l, v]) => (
+            <button
+              key={v}
+              className="bt"
+              onClick={() => {
+                if (v === "home") setView({ kind: "home" });
+                else if (v === "lessons") setView({ kind: "lesson", index: 0 });
+                else if (v === "tones") setView({ kind: "tones" });
+                else if (v === "flash") setView({ kind: "flash" });
+              }}
+              style={{
+                background: navView === v ? T.ac : "transparent",
+                color: navView === v ? (dark ? T.bg : "#fff") : T.td,
+                padding: "6px 10px",
+                borderRadius: 7,
+                fontSize: 12,
+                fontWeight: 600,
+              }}
+            >
+              {l}
+            </button>
           ))}
-          <button className="bt" onClick={toggleDark} style={{ background: "transparent", color: T.td, padding: "4px 8px", fontSize: 16 }}>{dark ? "\u2600\ufe0f" : "\u263e"}</button>
+          <button className="bt" onClick={toggleDark} style={{ background: "transparent", color: T.td, padding: "4px 8px", fontSize: 16 }}>
+            {dark ? "\u2600\ufe0f" : "\u263e"}
+          </button>
         </div>
       </header>
 
       {/* Main */}
       <main style={{ maxWidth: 700, margin: "0 auto", padding: "18px 16px 80px" }}>
-        {view === "home" && (
-          <Home open={(i) => { setLessonIndex(i); setView("lesson"); }} />
+        {view.kind === "home" && (
+          <Home onPractice={(mode) => setView({ kind: "practice", mode })} />
         )}
-        {view === "lesson" && (
+        {view.kind === "lesson" && (
           <Lesson
-            lessonIndex={lessonIndex}
-            back={() => setView("home")}
+            lessonIndex={view.index}
+            back={() => setView({ kind: "home" })}
             next={() => {
-              if (lessonIndex < LESSONS.length - 1) setLessonIndex(lessonIndex + 1);
-              else setView("home");
+              if (view.index < LESSONS.length - 1)
+                setView({ kind: "lesson", index: view.index + 1 });
+              else setView({ kind: "home" });
             }}
           />
         )}
-        {view === "tones" && <ToneTable />}
-        {view === "flash" && <Flashcards />}
+        {view.kind === "tones" && <ToneTable />}
+        {view.kind === "flash" && <Flashcards />}
+        {view.kind === "practice" && (
+          <div className="fu">
+            <button
+              className="bt"
+              onClick={() => setView({ kind: "home" })}
+              style={{ color: T.td, background: "none", fontSize: 14, marginBottom: 14 }}
+            >
+              {"\u2190 Back"}
+            </button>
+            <Quiz
+              pool={getPracticePool(view.mode)}
+              title={getPracticeTitle(view.mode)}
+              onDone={() => setView({ kind: "home" })}
+            />
+          </div>
+        )}
       </main>
     </div>
   );

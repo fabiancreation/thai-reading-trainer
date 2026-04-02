@@ -48,6 +48,7 @@ export interface Lesson {
 export interface UserProgress {
   done: number[];
   srs: Record<string, SRSCard>;
+  activeGroups: string[];
 }
 
 export interface SRSCard {
