@@ -37,7 +37,7 @@ interface AppShellProps {
 
 export default function AppShell({ userName, onLogout }: AppShellProps = {}) {
   const { dark, toggleDark, T, loading, progress, updateProgress } = useTheme();
-  const [view, setView] = useState<View>({ kind: "home" });
+  const [view, setView] = useState<View>({ kind: "lessons" });
 
   if (loading) {
     return (
