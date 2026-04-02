@@ -17,6 +17,7 @@ import {
 
 type View =
   | { kind: "home" }
+  | { kind: "lessons" }
   | { kind: "lesson"; index: number }
   | { kind: "tones" }
   | { kind: "flash" }
@@ -35,7 +36,7 @@ export default function AppShell() {
   }
 
   const activeGroups = progress.activeGroups || [];
-  const navView = view.kind === "home" ? "home" : view.kind === "tones" ? "tones" : view.kind === "flash" ? "flash" : view.kind === "lesson" ? "lessons" : "home";
+  const navView = view.kind === "home" ? "home" : view.kind === "tones" ? "tones" : view.kind === "flash" ? "flash" : (view.kind === "lessons" || view.kind === "lesson") ? "lessons" : "home";
 
   function getPracticePool(mode: PracticeMode) {
     switch (mode.kind) {
@@ -81,7 +82,7 @@ export default function AppShell() {
               className="bt"
               onClick={() => {
                 if (v === "home") setView({ kind: "home" });
-                else if (v === "lessons") setView({ kind: "lesson", index: 0 });
+                else if (v === "lessons") setView({ kind: "lessons" });
                 else if (v === "tones") setView({ kind: "tones" });
                 else if (v === "flash") setView({ kind: "flash" });
               }}
@@ -108,14 +109,21 @@ export default function AppShell() {
         {view.kind === "home" && (
           <Home onPractice={(mode) => setView({ kind: "practice", mode })} />
         )}
+        {view.kind === "lessons" && (
+          <LessonList
+            T={T}
+            done={progress.done || []}
+            open={(i) => setView({ kind: "lesson", index: i })}
+          />
+        )}
         {view.kind === "lesson" && (
           <Lesson
             lessonIndex={view.index}
-            back={() => setView({ kind: "home" })}
+            back={() => setView({ kind: "lessons" })}
             next={() => {
               if (view.index < LESSONS.length - 1)
                 setView({ kind: "lesson", index: view.index + 1 });
-              else setView({ kind: "home" });
+              else setView({ kind: "lessons" });
             }}
           />
         )}
@@ -138,6 +146,53 @@ export default function AppShell() {
           </div>
         )}
       </main>
+    </div>
+  );
+}
+
+function LessonList({ T, done, open }: { T: Record<string, string>; done: number[]; open: (i: number) => void }) {
+  const pct = Math.round((done.length / LESSONS.length) * 100);
+  return (
+    <div className="fu">
+      <div style={{ marginBottom: 22 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 5 }}>
+          <span style={{ fontSize: 14, color: T.td }}>Progress</span>
+          <span style={{ fontSize: 14, color: T.ac, fontWeight: 600 }}>{pct}%</span>
+        </div>
+        <div style={{ height: 5, background: T.sl, borderRadius: 3, overflow: "hidden" }}>
+          <div style={{ width: pct + "%", height: "100%", background: T.ac, borderRadius: 3, transition: "width .5s" }} />
+        </div>
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        {LESSONS.map((l, i) => {
+          const dn = done.includes(l.id);
+          return (
+            <div
+              key={l.id}
+              className="fu ch"
+              onClick={() => open(i)}
+              style={{
+                background: dn ? T.ok + "0d" : T.sf,
+                border: "1px solid " + (dn ? T.ok + "33" : T.bd),
+                borderRadius: 10,
+                padding: "14px 16px",
+                animationDelay: i * 40 + "ms",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <div style={{ width: 34, height: 34, borderRadius: 8, background: dn ? T.ok : T.ac, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700, color: "#fff", flexShrink: 0 }}>
+                  {dn ? "\u2713" : i + 1}
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 11, color: dn ? T.ok : T.tm, textTransform: "uppercase", letterSpacing: 0.7, marginBottom: 1 }}>{l.phase}</div>
+                  <div style={{ fontSize: 16, fontWeight: 600 }}>{l.title}</div>
+                </div>
+                {l.items.length > 0 && <div style={{ fontSize: 13, color: T.tm }}>{l.items.length}</div>}
+              </div>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
