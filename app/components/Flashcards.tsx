@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { LESSONS } from "@/lib/data/lessons";
+import { SRSCard } from "@/lib/data/types";
 import { useTheme, Theme } from "./ThemeProvider";
 
 interface FlashCard {
@@ -14,24 +15,67 @@ interface FlashCard {
 const cc = (c: string, T: Theme) => c === "mid" ? T.mid : c === "high" ? T.high : T.low;
 const CL = (c: string) => c === "mid" ? "MID" : c === "high" ? "HIGH" : "LOW";
 
+function isDue(card: SRSCard | undefined): boolean {
+  if (!card) return true; // new card, never reviewed
+  return new Date(card.due) <= new Date();
+}
+
 export default function Flashcards() {
-  const { T, progress } = useTheme();
+  const { T, progress, updateProgress } = useTheme();
 
-  const cards: FlashCard[] = LESSONS.filter((l) => (progress.done || []).includes(l.id)).flatMap(
-    (l) => [
-      ...l.items.filter((it) => !it.thai.startsWith("-")).map((it) => ({
-        thai: it.thai, pb: it.pb, en: it.en, cls: "cls" in it ? it.cls : undefined,
-      })),
-      ...(l.words || []).map((w) => ({ thai: w.thai, pb: w.pb, en: w.en })),
-    ]
-  );
+  // All cards from completed lessons
+  const allCards: FlashCard[] = useMemo(() =>
+    LESSONS.filter((l) => (progress.done || []).includes(l.id)).flatMap(
+      (l) => [
+        ...l.items.filter((it) => !it.thai.startsWith("-")).map((it) => ({
+          thai: it.thai, pb: it.pb, en: it.en, cls: "cls" in it ? it.cls : undefined,
+        })),
+        ...(l.words || []).map((w) => ({ thai: w.thai, pb: w.pb, en: w.en })),
+      ]
+    ), [progress.done]);
 
-  const [deck, setDeck] = useState(() => [...cards].sort(() => Math.random() - 0.5));
+  // Filter to only due cards
+  const dueCards = useMemo(() =>
+    allCards.filter((c) => isDue(progress.srs[c.thai])),
+    [allCards, progress.srs]);
+
+  const [deck, setDeck] = useState(() => [...dueCards].sort(() => Math.random() - 0.5));
   const [idx, setIdx] = useState(0);
   const [flip, setFlip] = useState(false);
   const [st, setSt] = useState({ r: 0, w: 0 });
 
-  if (cards.length === 0) {
+  const reviewCard = (thai: string, gotIt: boolean) => {
+    const now = new Date();
+    const existing = progress.srs[thai];
+    let interval: number;
+    let reps: number;
+
+    if (gotIt) {
+      interval = existing ? Math.min(existing.interval * 2, 30) : 1;
+      reps = (existing?.reps || 0) + 1;
+    } else {
+      interval = 0;
+      reps = 0;
+    }
+
+    const due = new Date(now);
+    due.setDate(due.getDate() + interval);
+
+    const updatedSrs: SRSCard = {
+      thai,
+      interval,
+      ease: 2.5,
+      due: due.toISOString(),
+      reps,
+    };
+
+    updateProgress((p) => ({
+      ...p,
+      srs: { ...p.srs, [thai]: updatedSrs },
+    }));
+  };
+
+  if (allCards.length === 0) {
     return (
       <div className="fu" style={{ textAlign: "center", padding: "36px 0" }}>
         <div style={{ fontSize: 36, marginBottom: 10 }}>{"\uD83D\uDCDA"}</div>
@@ -41,19 +85,39 @@ export default function Flashcards() {
     );
   }
 
-  if (idx >= deck.length) {
+  if (deck.length === 0 || idx >= deck.length) {
+    const totalReviewed = st.r + st.w;
+    const nextDueCards = allCards.filter((c) => isDue(progress.srs[c.thai]));
+
     return (
       <div className="fu" style={{ textAlign: "center", padding: "36px 0" }}>
-        <div style={{ fontSize: 36, marginBottom: 10 }}>{"\u2705"}</div>
-        <h3 style={{ fontSize: 18, marginBottom: 5 }}>Deck complete!</h3>
-        <p style={{ fontSize: 15, color: T.td, marginBottom: 18 }}>{st.r} correct, {st.w} to review</p>
-        <button className="bt" onClick={() => { setDeck([...cards].sort(() => Math.random() - 0.5)); setIdx(0); setFlip(false); setSt({ r: 0, w: 0 }); }} style={{ padding: "10px 24px", borderRadius: 9, background: T.ac, color: "#fff", fontSize: 15, fontWeight: 700 }}>Again</button>
+        <div style={{ fontSize: 36, marginBottom: 10 }}>{totalReviewed > 0 ? "\u2705" : "\uD83C\uDF1F"}</div>
+        <h3 style={{ fontSize: 18, marginBottom: 5 }}>
+          {totalReviewed > 0 ? "Deck complete!" : "All caught up!"}
+        </h3>
+        {totalReviewed > 0 ? (
+          <p style={{ fontSize: 15, color: T.td, marginBottom: 18 }}>{st.r} correct, {st.w} to review</p>
+        ) : (
+          <p style={{ fontSize: 15, color: T.td, marginBottom: 18 }}>No cards due right now. Come back later.</p>
+        )}
+        <div style={{ fontSize: 13, color: T.tm, marginBottom: 18 }}>
+          {allCards.length} cards total &middot; {nextDueCards.length} due now
+        </div>
+        {nextDueCards.length > 0 && (
+          <button className="bt" onClick={() => {
+            setDeck([...nextDueCards].sort(() => Math.random() - 0.5));
+            setIdx(0); setFlip(false); setSt({ r: 0, w: 0 });
+          }} style={{ padding: "10px 24px", borderRadius: 9, background: T.ac, color: "#fff", fontSize: 15, fontWeight: 700 }}>
+            Review {nextDueCards.length} cards
+          </button>
+        )}
       </div>
     );
   }
 
   const c = deck[idx];
   const go = (ok: boolean) => {
+    reviewCard(c.thai, ok);
     setSt((s) => ({ ...s, [ok ? "r" : "w"]: s[ok ? "r" : "w"] + 1 }));
     setFlip(false);
     setIdx((i) => i + 1);

@@ -1,7 +1,8 @@
 import { supabase } from "./supabase";
 import { UserProgress } from "./data/types";
+import { USER_ID } from "./user";
 
-const STORAGE_KEY = "thai-reading-trainer";
+const STORAGE_KEY = "thai-rt-" + USER_ID;
 const DEFAULT_PROGRESS: UserProgress = { done: [], srs: {} };
 
 function localLoad(): { pg: UserProgress; dk: boolean } {
@@ -21,7 +22,7 @@ function localSave(pg: UserProgress, dk: boolean) {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify({ pg, dk }));
   } catch {
-    // quota exceeded — silently fail
+    // quota exceeded
   }
 }
 
@@ -31,7 +32,7 @@ export async function loadProgress(): Promise<UserProgress> {
     const { data } = await supabase
       .from("user_progress")
       .select("completed_lessons, srs_cards")
-      .eq("user_id", "default")
+      .eq("user_id", USER_ID)
       .single();
     if (!data) return localLoad().pg;
     return {
@@ -48,14 +49,14 @@ export async function saveProgress(progress: UserProgress, dark: boolean): Promi
   if (!supabase) return;
   try {
     await supabase.from("user_progress").upsert({
-      user_id: "default",
+      user_id: USER_ID,
       completed_lessons: progress.done,
       srs_cards: progress.srs,
       preferences: { dark },
       updated_at: new Date().toISOString(),
     });
   } catch {
-    // Supabase write failed — local storage is the fallback
+    // local storage is the fallback
   }
 }
 
@@ -65,7 +66,7 @@ export async function loadDarkMode(): Promise<boolean> {
     const { data } = await supabase
       .from("user_progress")
       .select("preferences")
-      .eq("user_id", "default")
+      .eq("user_id", USER_ID)
       .single();
     return data?.preferences?.dark ?? localLoad().dk;
   } catch {
