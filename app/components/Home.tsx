@@ -8,62 +8,46 @@ interface HomeProps {
 }
 
 export default function Home({ open }: HomeProps) {
-  const { progress } = useTheme();
+  const { T, progress } = useTheme();
   const d = progress.done || [];
   const pct = Math.round((d.length / LESSONS.length) * 100);
 
   return (
-    <div className="animate-fade-up">
-      {/* Progress bar */}
-      <div className="mb-5">
-        <div className="flex justify-between mb-1">
-          <span className="text-sm text-muted">Progress</span>
-          <span className="text-sm text-accent font-semibold">{pct}%</span>
+    <div className="fu">
+      <div style={{ marginBottom: 22 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 5 }}>
+          <span style={{ fontSize: 14, color: T.td }}>Progress</span>
+          <span style={{ fontSize: 14, color: T.ac, fontWeight: 600 }}>{pct}%</span>
         </div>
-        <div className="h-1.5 bg-surface-alt rounded-full overflow-hidden">
-          <div
-            className="h-full bg-accent rounded-full transition-[width] duration-500"
-            style={{ width: `${pct}%` }}
-          />
+        <div style={{ height: 5, background: T.sl, borderRadius: 3, overflow: "hidden" }}>
+          <div style={{ width: pct + "%", height: "100%", background: T.ac, borderRadius: 3, transition: "width .5s" }} />
         </div>
       </div>
-
-      {/* Lesson list */}
-      <div className="flex flex-col gap-2">
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         {LESSONS.map((l, i) => {
           const dn = d.includes(l.id);
           return (
             <div
               key={l.id}
+              className="fu ch"
               onClick={() => open(i)}
-              className={`animate-fade-up cursor-pointer hover:-translate-y-0.5 transition-transform rounded-[10px] px-4 py-3.5 border ${
-                dn
-                  ? "bg-ok/5 border-ok/20"
-                  : "bg-surface border-border"
-              }`}
-              style={{ animationDelay: `${i * 40}ms` }}
+              style={{
+                background: dn ? T.ok + "0d" : T.sf,
+                border: "1px solid " + (dn ? T.ok + "33" : T.bd),
+                borderRadius: 10,
+                padding: "14px 16px",
+                animationDelay: i * 40 + "ms",
+              }}
             >
-              <div className="flex items-center gap-3">
-                <div
-                  className={`w-[34px] h-[34px] rounded-lg flex items-center justify-center text-sm font-bold text-white shrink-0 ${
-                    dn ? "bg-ok" : "bg-accent"
-                  }`}
-                >
+              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <div style={{ width: 34, height: 34, borderRadius: 8, background: dn ? T.ok : T.ac, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700, color: "#fff", flexShrink: 0 }}>
                   {dn ? "\u2713" : i + 1}
                 </div>
-                <div className="flex-1">
-                  <div
-                    className={`text-[11px] uppercase tracking-wider mb-0.5 ${
-                      dn ? "text-ok" : "text-muted-light"
-                    }`}
-                  >
-                    {l.phase}
-                  </div>
-                  <div className="text-base font-semibold">{l.title}</div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 11, color: dn ? T.ok : T.tm, textTransform: "uppercase", letterSpacing: 0.7, marginBottom: 1 }}>{l.phase}</div>
+                  <div style={{ fontSize: 16, fontWeight: 600 }}>{l.title}</div>
                 </div>
-                {l.items.length > 0 && (
-                  <div className="text-[13px] text-muted-light">{l.items.length}</div>
-                )}
+                {l.items.length > 0 && <div style={{ fontSize: 13, color: T.tm }}>{l.items.length}</div>}
               </div>
             </div>
           );

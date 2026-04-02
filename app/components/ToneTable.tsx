@@ -1,120 +1,77 @@
 "use client";
 
-const TONE_COLORS: Record<string, string> = {
-  mid: "bg-[#5a8c6a]/[0.13] text-[#5a8c6a]",
-  low: "bg-[#4a7ab5]/[0.13] text-[#4a7ab5]",
-  falling: "bg-[#b56a4a]/[0.13] text-[#b56a4a]",
-  high: "bg-[#c9a84c]/[0.13] text-[#c9a84c]",
-  rising: "bg-[#9b6bb5]/[0.13] text-[#9b6bb5]",
+import { useTheme, Theme } from "./ThemeProvider";
+
+const TC: Record<string, string> = {
+  mid: "#5a8c6a", low: "#4a7ab5", falling: "#b56a4a", high: "#c9a84c", rising: "#9b6bb5",
 };
 
 function ToneCell({ tone }: { tone: string }) {
+  const c = TC[tone] || "#888";
   return (
-    <td className={`px-1.5 py-2 text-center text-[13px] font-semibold rounded-[5px] ${TONE_COLORS[tone] || ""}`}>
+    <td style={{ background: c + "22", color: c, padding: "8px 6px", textAlign: "center", fontSize: 13, fontWeight: 600, borderRadius: 5 }}>
       {tone.charAt(0).toUpperCase() + tone.slice(1)}
     </td>
   );
 }
 
-function EmptyCell() {
-  return <td className="px-2 py-2 text-center text-muted-light text-[13px]">--</td>;
+function EmptyCell({ T }: { T: Theme }) {
+  return <td style={{ padding: 8, textAlign: "center", color: T.tm, fontSize: 13 }}>--</td>;
 }
 
 export default function ToneTable() {
+  const { T } = useTheme();
+  const th = { padding: 8, textAlign: "center" as const, color: T.tm, fontSize: 12 };
+
   return (
-    <div className="animate-fade-up">
-      <h2 className="text-xl font-bold mb-1.5">Tone Rules</h2>
-      <p className="text-sm text-muted mb-1.5 leading-normal">
-        Thai has 5 tones: mid, low, falling, high, rising.
-      </p>
-      <p className="text-sm text-muted mb-4 leading-normal">
-        Without tone marks: class + syllable type + vowel length = tone
-      </p>
+    <div className="fu">
+      <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 6 }}>Tone Rules</h2>
+      <p style={{ fontSize: 14, color: T.td, marginBottom: 6, lineHeight: 1.5 }}>Thai has 5 tones: mid, low, falling, high, rising.</p>
+      <p style={{ fontSize: 14, color: T.td, marginBottom: 16, lineHeight: 1.5 }}>Without tone marks: class + syllable type + vowel length = tone</p>
 
-      {/* Base tone table */}
-      <div className="overflow-x-auto mb-5">
-        <table className="w-full border-separate" style={{ borderSpacing: "3px" }}>
+      <div style={{ overflowX: "auto", marginBottom: 20 }}>
+        <table style={{ width: "100%", borderCollapse: "separate", borderSpacing: 3 }}>
           <thead>
             <tr>
-              <th className="p-2 text-left text-muted-light text-xs">Class</th>
-              <th className="p-2 text-center text-muted-light text-xs">Live</th>
-              <th className="p-2 text-center text-muted-light text-xs">Dead (long)</th>
-              <th className="p-2 text-center text-muted-light text-xs">Dead (short)</th>
+              <th style={{ ...th, textAlign: "left" }}>Class</th>
+              <th style={th}>Live</th>
+              <th style={th}>Dead (long)</th>
+              <th style={th}>Dead (short)</th>
             </tr>
           </thead>
           <tbody>
-            <tr>
-              <td className="p-2 font-semibold text-cls-mid">Mid</td>
-              <ToneCell tone="mid" />
-              <ToneCell tone="low" />
-              <ToneCell tone="low" />
-            </tr>
-            <tr>
-              <td className="p-2 font-semibold text-cls-high">High</td>
-              <ToneCell tone="rising" />
-              <ToneCell tone="low" />
-              <ToneCell tone="low" />
-            </tr>
-            <tr>
-              <td className="p-2 font-semibold text-cls-low">Low</td>
-              <ToneCell tone="mid" />
-              <ToneCell tone="falling" />
-              <ToneCell tone="high" />
-            </tr>
+            <tr><td style={{ padding: 8, fontWeight: 600, color: T.mid }}>Mid</td><ToneCell tone="mid" /><ToneCell tone="low" /><ToneCell tone="low" /></tr>
+            <tr><td style={{ padding: 8, fontWeight: 600, color: T.high }}>High</td><ToneCell tone="rising" /><ToneCell tone="low" /><ToneCell tone="low" /></tr>
+            <tr><td style={{ padding: 8, fontWeight: 600, color: T.low }}>Low</td><ToneCell tone="mid" /><ToneCell tone="falling" /><ToneCell tone="high" /></tr>
           </tbody>
         </table>
       </div>
 
-      {/* Tone marks table */}
-      <h3 className="text-lg font-bold mb-2.5">With Tone Marks</h3>
-      <div className="overflow-x-auto">
-        <table className="w-full border-separate" style={{ borderSpacing: "3px" }}>
+      <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 10 }}>With Tone Marks</h3>
+      <div style={{ overflowX: "auto" }}>
+        <table style={{ width: "100%", borderCollapse: "separate", borderSpacing: 3 }}>
           <thead>
             <tr>
-              <th className="p-2 text-left text-muted-light text-xs">Class</th>
-              <th className="p-2 text-center text-muted-light text-xs">No mark</th>
-              <th className="p-2 text-center text-muted-light text-xs">{"\u0e48"} Mai Eek</th>
-              <th className="p-2 text-center text-muted-light text-xs">{"\u0e49"} Mai Too</th>
-              <th className="p-2 text-center text-muted-light text-xs">{"\u0e4a"} Dtrii</th>
-              <th className="p-2 text-center text-muted-light text-xs">{"\u0e4b"} Jat</th>
+              <th style={{ ...th, textAlign: "left" }}>Class</th>
+              <th style={th}>No mark</th>
+              <th style={th}>{"\u0e48"} Mai Eek</th>
+              <th style={th}>{"\u0e49"} Mai Too</th>
+              <th style={th}>{"\u0e4a"} Dtrii</th>
+              <th style={th}>{"\u0e4b"} Jat</th>
             </tr>
           </thead>
           <tbody>
-            <tr>
-              <td className="p-2 font-semibold text-cls-mid">Mid</td>
-              <ToneCell tone="mid" />
-              <ToneCell tone="low" />
-              <ToneCell tone="falling" />
-              <ToneCell tone="high" />
-              <ToneCell tone="rising" />
-            </tr>
-            <tr>
-              <td className="p-2 font-semibold text-cls-high">High</td>
-              <ToneCell tone="rising" />
-              <ToneCell tone="low" />
-              <ToneCell tone="falling" />
-              <EmptyCell />
-              <EmptyCell />
-            </tr>
-            <tr>
-              <td className="p-2 font-semibold text-cls-low">Low</td>
-              <ToneCell tone="mid" />
-              <ToneCell tone="falling" />
-              <ToneCell tone="high" />
-              <EmptyCell />
-              <EmptyCell />
-            </tr>
+            <tr><td style={{ padding: 8, fontWeight: 600, color: T.mid }}>Mid</td><ToneCell tone="mid" /><ToneCell tone="low" /><ToneCell tone="falling" /><ToneCell tone="high" /><ToneCell tone="rising" /></tr>
+            <tr><td style={{ padding: 8, fontWeight: 600, color: T.high }}>High</td><ToneCell tone="rising" /><ToneCell tone="low" /><ToneCell tone="falling" /><EmptyCell T={T} /><EmptyCell T={T} /></tr>
+            <tr><td style={{ padding: 8, fontWeight: 600, color: T.low }}>Low</td><ToneCell tone="mid" /><ToneCell tone="falling" /><ToneCell tone="high" /><EmptyCell T={T} /><EmptyCell T={T} /></tr>
           </tbody>
         </table>
       </div>
 
-      {/* Remember box */}
-      <div className="bg-accent/5 border border-accent/[0.13] rounded-lg py-3 px-3.5 mt-4">
-        <div className="text-[13px] font-bold text-accent mb-1">Remember</div>
-        <div className="text-sm leading-relaxed">
-          {
-            "Mai \u00c8ek: Mid/High \u2192 Low, Low \u2192 Falling. Mai T\u00f4o: Mid/High \u2192 Falling, Low \u2192 High. Mai Dtrii & Mai J\u00e0t only work with Mid class."
-          }
+      <div style={{ background: T.ac + "0d", border: "1px solid " + T.ac + "22", borderRadius: 8, padding: "12px 14px", marginTop: 18 }}>
+        <div style={{ fontSize: 13, fontWeight: 700, color: T.ac, marginBottom: 3 }}>Remember</div>
+        <div style={{ fontSize: 14, color: T.tx, lineHeight: 1.6 }}>
+          {"Mai \u00c8ek: Mid/High \u2192 Low, Low \u2192 Falling. Mai T\u00f4o: Mid/High \u2192 Falling, Low \u2192 High. Mai Dtrii & Mai J\u00e0t only work with Mid class."}
         </div>
       </div>
     </div>

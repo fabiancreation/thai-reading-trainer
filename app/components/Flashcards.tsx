@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { LESSONS } from "@/lib/data/lessons";
-import { useTheme } from "./ThemeProvider";
+import { useTheme, Theme } from "./ThemeProvider";
 
 interface FlashCard {
   thai: string;
@@ -11,37 +11,17 @@ interface FlashCard {
   cls?: string;
 }
 
-function classColor(cls: string): string {
-  if (cls === "mid") return "text-cls-mid";
-  if (cls === "high") return "text-cls-high";
-  return "text-cls-low";
-}
-
-function classBg(cls: string): string {
-  if (cls === "mid") return "bg-cls-mid/[0.08] text-cls-mid";
-  if (cls === "high") return "bg-cls-high/[0.08] text-cls-high";
-  return "bg-cls-low/[0.08] text-cls-low";
-}
-
-function classLabel(cls: string): string {
-  if (cls === "mid") return "MID";
-  if (cls === "high") return "HIGH";
-  return "LOW";
-}
+const cc = (c: string, T: Theme) => c === "mid" ? T.mid : c === "high" ? T.high : T.low;
+const CL = (c: string) => c === "mid" ? "MID" : c === "high" ? "HIGH" : "LOW";
 
 export default function Flashcards() {
-  const { progress } = useTheme();
+  const { T, progress } = useTheme();
 
   const cards: FlashCard[] = LESSONS.filter((l) => (progress.done || []).includes(l.id)).flatMap(
     (l) => [
-      ...l.items
-        .filter((it) => !it.thai.startsWith("-"))
-        .map((it) => ({
-          thai: it.thai,
-          pb: it.pb,
-          en: it.en,
-          cls: "cls" in it ? it.cls : undefined,
-        })),
+      ...l.items.filter((it) => !it.thai.startsWith("-")).map((it) => ({
+        thai: it.thai, pb: it.pb, en: it.en, cls: "cls" in it ? it.cls : undefined,
+      })),
       ...(l.words || []).map((w) => ({ thai: w.thai, pb: w.pb, en: w.en })),
     ]
   );
@@ -53,33 +33,21 @@ export default function Flashcards() {
 
   if (cards.length === 0) {
     return (
-      <div className="animate-fade-up text-center py-9">
-        <div className="text-4xl mb-2.5">{"\uD83D\uDCDA"}</div>
-        <h3 className="text-lg mb-1">No cards yet</h3>
-        <p className="text-[15px] text-muted">Complete a lesson first.</p>
+      <div className="fu" style={{ textAlign: "center", padding: "36px 0" }}>
+        <div style={{ fontSize: 36, marginBottom: 10 }}>{"\uD83D\uDCDA"}</div>
+        <h3 style={{ fontSize: 18, marginBottom: 5 }}>No cards yet</h3>
+        <p style={{ fontSize: 15, color: T.td }}>Complete a lesson first.</p>
       </div>
     );
   }
 
   if (idx >= deck.length) {
     return (
-      <div className="animate-fade-up text-center py-9">
-        <div className="text-4xl mb-2.5">{"\u2705"}</div>
-        <h3 className="text-lg mb-1">Deck complete!</h3>
-        <p className="text-[15px] text-muted mb-5">
-          {st.r} correct, {st.w} to review
-        </p>
-        <button
-          onClick={() => {
-            setDeck([...cards].sort(() => Math.random() - 0.5));
-            setIdx(0);
-            setFlip(false);
-            setSt({ r: 0, w: 0 });
-          }}
-          className="px-6 py-2.5 rounded-[9px] bg-accent text-white text-[15px] font-bold btn-base"
-        >
-          Again
-        </button>
+      <div className="fu" style={{ textAlign: "center", padding: "36px 0" }}>
+        <div style={{ fontSize: 36, marginBottom: 10 }}>{"\u2705"}</div>
+        <h3 style={{ fontSize: 18, marginBottom: 5 }}>Deck complete!</h3>
+        <p style={{ fontSize: 15, color: T.td, marginBottom: 18 }}>{st.r} correct, {st.w} to review</p>
+        <button className="bt" onClick={() => { setDeck([...cards].sort(() => Math.random() - 0.5)); setIdx(0); setFlip(false); setSt({ r: 0, w: 0 }); }} style={{ padding: "10px 24px", borderRadius: 9, background: T.ac, color: "#fff", fontSize: 15, fontWeight: 700 }}>Again</button>
       </div>
     );
   }
@@ -92,58 +60,37 @@ export default function Flashcards() {
   };
 
   return (
-    <div className="animate-fade-up">
-      <div className="flex justify-between mb-3.5">
-        <span className="text-sm text-muted">
-          Card {idx + 1}/{deck.length}
-        </span>
-        <span className="text-sm">
-          <span className="text-ok">{st.r}{"\u2713"}</span>{" "}
-          <span className="text-no">{st.w}{"\u2717"}</span>
+    <div className="fu">
+      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 14 }}>
+        <span style={{ fontSize: 14, color: T.td }}>Card {idx + 1}/{deck.length}</span>
+        <span style={{ fontSize: 14 }}>
+          <span style={{ color: T.ok }}>{st.r}{"\u2713"}</span>{" "}
+          <span style={{ color: T.no }}>{st.w}{"\u2717"}</span>
         </span>
       </div>
-
-      <div
-        onClick={() => setFlip(!flip)}
-        className="bg-card border border-border rounded-[14px] py-11 px-5 text-center cursor-pointer min-h-[180px] flex flex-col items-center justify-center"
-      >
+      <div onClick={() => setFlip(!flip)} style={{
+        background: T.cd, border: "1px solid " + T.bd, borderRadius: 14,
+        padding: "44px 20px", textAlign: "center", cursor: "pointer", minHeight: 180,
+        display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+      }}>
         {!flip ? (
           <>
-            <div className="text-[64px] font-bold text-accent mb-1.5">{c.thai}</div>
-            <div className="text-sm text-muted-light">Tap to flip</div>
+            <div style={{ fontSize: 64, fontWeight: 700, color: T.ac, marginBottom: 6 }}>{c.thai}</div>
+            <div style={{ fontSize: 14, color: T.tm }}>Tap to flip</div>
           </>
         ) : (
           <>
-            <div className="text-[32px] font-semibold text-muted mb-1.5">{c.thai}</div>
-            <div className="text-[22px] font-bold mb-1">{c.pb}</div>
-            <div className="text-[15px] text-muted">{c.en}</div>
-            {c.cls && (
-              <span
-                className={`inline-block text-[11px] font-bold px-2 py-0.5 rounded mt-1.5 ${classBg(
-                  c.cls
-                )}`}
-              >
-                {classLabel(c.cls)}
-              </span>
-            )}
+            <div style={{ fontSize: 32, fontWeight: 600, color: T.td, marginBottom: 6 }}>{c.thai}</div>
+            <div style={{ fontSize: 22, fontWeight: 700, marginBottom: 3 }}>{c.pb}</div>
+            <div style={{ fontSize: 15, color: T.td }}>{c.en}</div>
+            {c.cls && <div style={{ display: "inline-block", fontSize: 11, color: cc(c.cls, T), background: cc(c.cls, T) + "15", padding: "2px 8px", borderRadius: 4, marginTop: 6, fontWeight: 700 }}>{CL(c.cls)}</div>}
           </>
         )}
       </div>
-
       {flip && (
-        <div className="grid grid-cols-2 gap-2.5 mt-3.5">
-          <button
-            onClick={() => go(false)}
-            className="py-3 rounded-[9px] bg-no/[0.09] border border-no/20 text-no text-[15px] font-bold btn-base"
-          >
-            Again
-          </button>
-          <button
-            onClick={() => go(true)}
-            className="py-3 rounded-[9px] bg-ok/[0.09] border border-ok/20 text-ok text-[15px] font-bold btn-base"
-          >
-            Got it!
-          </button>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 14 }}>
+          <button className="bt" onClick={() => go(false)} style={{ padding: "12px", borderRadius: 9, background: T.no + "18", border: "1px solid " + T.no + "33", color: T.no, fontSize: 15, fontWeight: 700 }}>Again</button>
+          <button className="bt" onClick={() => go(true)} style={{ padding: "12px", borderRadius: 9, background: T.ok + "18", border: "1px solid " + T.ok + "33", color: T.ok, fontSize: 15, fontWeight: 700 }}>Got it!</button>
         </div>
       )}
     </div>

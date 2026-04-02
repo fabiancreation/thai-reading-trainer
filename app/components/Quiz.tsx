@@ -2,11 +2,12 @@
 
 import { useState } from "react";
 import { Lesson, LessonItem, WordItem } from "@/lib/data/types";
+import { useTheme } from "./ThemeProvider";
 
 interface QuizQuestion {
   item: LessonItem | WordItem;
   opts: (LessonItem | WordItem)[];
-  n2t: boolean; // name-to-thai (show name, pick character)
+  n2t: boolean;
 }
 
 interface QuizProps {
@@ -15,6 +16,8 @@ interface QuizProps {
 }
 
 export default function Quiz({ lesson, onDone }: QuizProps) {
+  const { T } = useTheme();
+
   const pool = [
     ...lesson.items.filter(
       (it) =>
@@ -37,10 +40,7 @@ export default function Quiz({ lesson, onDone }: QuizProps) {
       .sort(() => Math.random() - 0.5)
       .slice(0, 8)
       .map((item) => {
-        const others = pool
-          .filter((x) => x.thai !== item.thai)
-          .sort(() => Math.random() - 0.5)
-          .slice(0, 3);
+        const others = pool.filter((x) => x.thai !== item.thai).sort(() => Math.random() - 0.5).slice(0, 3);
         const n2t = "cls" in item || "type" in item;
         return { item, opts: [item, ...others].sort(() => Math.random() - 0.5), n2t };
       });
@@ -48,20 +48,11 @@ export default function Quiz({ lesson, onDone }: QuizProps) {
 
   if (qs.length === 0 || qi >= qs.length) {
     return (
-      <div className="animate-fade-up text-center py-7">
-        <div className="text-[40px] mb-2.5">{sc >= (qs.length || 1) * 0.7 ? "\uD83C\uDF1F" : "\uD83D\uDCDD"}</div>
-        <h3 className="text-lg mb-1.5">
-          {sc}/{qs.length} correct
-        </h3>
-        <p className="text-[15px] text-muted mb-5">
-          {sc >= (qs.length || 1) * 0.7 ? "Great job!" : "Try again!"}
-        </p>
-        <button
-          onClick={onDone}
-          className="px-6 py-2.5 rounded-[9px] bg-accent text-white text-[15px] font-bold btn-base"
-        >
-          Continue
-        </button>
+      <div className="fu" style={{ textAlign: "center", padding: "28px 0" }}>
+        <div style={{ fontSize: 40, marginBottom: 10 }}>{sc >= (qs.length || 1) * 0.7 ? "\uD83C\uDF1F" : "\uD83D\uDCDD"}</div>
+        <h3 style={{ fontSize: 18, marginBottom: 6 }}>{sc}/{qs.length} correct</h3>
+        <p style={{ fontSize: 15, color: T.td, marginBottom: 18 }}>{sc >= (qs.length || 1) * 0.7 ? "Great job!" : "Try again!"}</p>
+        <button className="bt" onClick={onDone} style={{ padding: "10px 24px", borderRadius: 9, background: T.ac, color: "#fff", fontSize: 15, fontWeight: 700 }}>Continue</button>
       </div>
     );
   }
@@ -71,57 +62,44 @@ export default function Quiz({ lesson, onDone }: QuizProps) {
     const ok = o.thai === q.item.thai;
     setSel({ o, ok });
     if (ok) setSc((s) => s + 1);
-    setTimeout(() => {
-      setSel(null);
-      setQi((i) => i + 1);
-    }, 750);
+    setTimeout(() => { setSel(null); setQi((i) => i + 1); }, 750);
   };
 
   return (
-    <div className="animate-fade-up">
-      <div className="flex justify-between mb-3">
-        <span className="text-sm text-muted">
-          Q {qi + 1}/{qs.length}
-        </span>
-        <span className="text-sm text-accent">{sc} correct</span>
+    <div className="fu">
+      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12 }}>
+        <span style={{ fontSize: 14, color: T.td }}>Q {qi + 1}/{qs.length}</span>
+        <span style={{ fontSize: 14, color: T.ac }}>{sc} correct</span>
       </div>
-      <div className="h-[3px] bg-surface-alt rounded-sm mb-5 overflow-hidden">
-        <div
-          className="h-full bg-accent rounded-sm transition-[width] duration-300"
-          style={{ width: `${(qi / qs.length) * 100}%` }}
-        />
+      <div style={{ height: 3, background: T.sl, borderRadius: 2, marginBottom: 20, overflow: "hidden" }}>
+        <div style={{ width: (qi / qs.length * 100) + "%", height: "100%", background: T.ac, borderRadius: 2, transition: "width .3s" }} />
       </div>
-      <div className="text-center mb-6">
-        <div className="text-[15px] text-muted mb-2.5">
-          {q.n2t ? "Which character is this?" : "How do you read this?"}
-        </div>
-        <div
-          className={`font-bold text-accent leading-tight ${q.n2t ? "text-2xl" : "text-[56px]"}`}
-        >
-          {q.n2t ? q.item.pb : q.item.thai}
-        </div>
-        {q.item.en && <div className="text-[13px] text-muted-light mt-1">{q.item.en}</div>}
+      <div style={{ textAlign: "center", marginBottom: 24 }}>
+        <div style={{ fontSize: 15, color: T.td, marginBottom: 10 }}>{q.n2t ? "Which character is this?" : "How do you read this?"}</div>
+        <div style={{ fontSize: q.n2t ? 24 : 56, fontWeight: 700, color: T.ac, lineHeight: 1.2 }}>{q.n2t ? q.item.pb : q.item.thai}</div>
+        {q.item.en && <div style={{ fontSize: 13, color: T.tm, marginTop: 4 }}>{q.item.en}</div>}
       </div>
-      <div className="grid grid-cols-2 gap-2">
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
         {q.opts.map((o, i) => {
           const isSel = sel?.o === o;
           const isOk = o.thai === q.item.thai;
-          let cls = "bg-quiz border-border";
+          let bg = T.qz, bc = T.bd;
           if (sel) {
-            if (isOk) cls = "bg-ok/[0.13] border-ok";
-            else if (isSel) cls = "bg-no/[0.13] border-no";
+            if (isOk) { bg = T.ok + "22"; bc = T.ok; }
+            else if (isSel) { bg = T.no + "22"; bc = T.no; }
           }
           return (
-            <button
-              key={i}
-              disabled={!!sel}
-              onClick={() => ans(o)}
-              className={`border rounded-[9px] py-3.5 px-2.5 font-semibold transition-all duration-200 btn-base ${cls} ${
-                q.n2t ? "text-[32px]" : "text-[15px]"
-              } ${sel && !isSel && !isOk ? "opacity-30" : "opacity-100"}`}
-            >
-              {q.n2t ? o.thai : o.pb}
-            </button>
+            <button key={i} className="bt" disabled={!!sel} onClick={() => ans(o)} style={{
+              background: bg,
+              border: "1px solid " + bc,
+              borderRadius: 9,
+              padding: "14px 10px",
+              fontSize: q.n2t ? 32 : 15,
+              fontWeight: 600,
+              color: T.tx,
+              opacity: sel && !isSel && !isOk ? 0.3 : 1,
+              transition: "all .2s",
+            }}>{q.n2t ? o.thai : o.pb}</button>
           );
         })}
       </div>
