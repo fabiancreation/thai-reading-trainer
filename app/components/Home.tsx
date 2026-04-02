@@ -1,6 +1,7 @@
 "use client";
 
 import { useTheme, Theme } from "./ThemeProvider";
+import { LESSONS } from "@/lib/data/lessons";
 import {
   ALL_GROUPS,
   CONSONANT_GROUPS,
@@ -20,6 +21,7 @@ type PracticeMode =
 
 interface HomeProps {
   onPractice: (mode: PracticeMode) => void;
+  openLesson: (index: number) => void;
 }
 
 const cc = (c: string, T: Theme) =>
@@ -27,7 +29,7 @@ const cc = (c: string, T: Theme) =>
 
 export type { PracticeMode };
 
-export default function Home({ onPractice }: HomeProps) {
+export default function Home({ onPractice, openLesson }: HomeProps) {
   const { T, progress, updateProgress } = useTheme();
   const active = progress.activeGroups || [];
 
@@ -134,6 +136,9 @@ export default function Home({ onPractice }: HomeProps) {
         onToggle={toggleGroup}
         onDrill={(id) => onPractice({ kind: "group", groupId: id })}
       />
+
+      {/* Lessons */}
+      <LessonsSection T={T} done={progress.done || []} openLesson={openLesson} />
 
       {/* Stats bar */}
       {totalActive > 0 && (
@@ -261,6 +266,59 @@ function GroupSection({ T, title, groups, active, onToggle, onDrill }: {
                   Drill
                 </button>
               )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function LessonsSection({ T, done, openLesson }: { T: Theme; done: number[]; openLesson: (i: number) => void }) {
+  return (
+    <div style={{ marginBottom: 20 }}>
+      <div style={{ fontSize: 12, color: T.td, textTransform: "uppercase", letterSpacing: 1, marginBottom: 8, fontWeight: 600 }}>
+        Lessons
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+        {LESSONS.map((l, i) => {
+          const isDone = done.includes(l.id);
+          return (
+            <div
+              key={l.id}
+              className="ch"
+              onClick={() => openLesson(i)}
+              style={{
+                background: isDone ? T.ok + "0d" : T.sf,
+                border: "1px solid " + (isDone ? T.ok + "33" : T.bd),
+                borderRadius: 10,
+                padding: "12px 14px",
+                display: "flex",
+                alignItems: "center",
+                gap: 10,
+              }}
+            >
+              <div style={{
+                width: 28,
+                height: 28,
+                borderRadius: 7,
+                background: isDone ? T.ok : T.sl,
+                color: isDone ? "#fff" : T.tm,
+                fontSize: 13,
+                fontWeight: 700,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexShrink: 0,
+              }}>
+                {isDone ? "✓" : i + 1}
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 15, fontWeight: 600 }}>{l.title}</div>
+                <div style={{ fontSize: 12, color: T.tm, marginTop: 1 }}>
+                  {l.phase}{l.items.length > 0 ? ` · ${l.items.length} items` : ""}
+                </div>
+              </div>
             </div>
           );
         })}
