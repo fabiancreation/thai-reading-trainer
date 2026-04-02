@@ -1,0 +1,78 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --color-bg: #f5f3ef;
+  --color-surface: #fff;
+  --color-surface-alt: #ece9e3;
+  --color-accent: #c4880d;
+  --color-accent-dark: #a06f08;
+  --color-cls-mid: #2d8659;
+  --color-cls-high: #c94a3e;
+  --color-cls-low: #3670b5;
+  --color-text: #1a1a1a;
+  --color-muted: #6b6660;
+  --color-muted-light: #9e9892;
+  --color-ok: #2d8659;
+  --color-no: #c94a3e;
+  --color-border: #ddd8d0;
+  --color-card: #faf9f7;
+  --color-quiz: #f0ede8;
+}
+
+.dark {
+  --color-bg: #0f1117;
+  --color-surface: #1a1d27;
+  --color-surface-alt: #242836;
+  --color-accent: #e8b931;
+  --color-accent-dark: #c49a1f;
+  --color-cls-mid: #5ba87b;
+  --color-cls-high: #e06456;
+  --color-cls-low: #4a90d9;
+  --color-text: #e8e6e1;
+  --color-muted: #9b9a97;
+  --color-muted-light: #6b6a67;
+  --color-ok: #5ba87b;
+  --color-no: #e06456;
+  --color-border: #2d3140;
+  --color-card: #1e2130;
+  --color-quiz: #242836;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: system-ui, -apple-system, sans-serif;
+  color: var(--color-text);
+  background: var(--color-bg);
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@utility animate-fade-up {
+  animation: fade-up 0.3s ease both;
+}
+
+@utility btn-base {
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.15s;
+  &:active {
+    transform: scale(0.97);
+  }
+}
