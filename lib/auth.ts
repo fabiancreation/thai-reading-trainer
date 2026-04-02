@@ -7,7 +7,7 @@ export interface AppUser {
 }
 
 function usernameToEmail(username: string): string {
-  return `${username.toLowerCase()}@readthai.app`;
+  return `${username.toLowerCase()}@users.readthai.com`;
 }
 
 function emailToUsername(email: string): string {
