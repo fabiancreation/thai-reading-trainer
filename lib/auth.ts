@@ -11,7 +11,7 @@ function usernameToEmail(username: string): string {
 }
 
 function emailToUsername(email: string): string {
-  return email.replace(/@readthai\.app$/, "");
+  return email.replace(/@users\.readthai\.com$/, "");
 }
 
 // --- Session ---
@@ -20,12 +20,17 @@ export async function getSession(): Promise<AppUser | null> {
   if (!supabase) return getLocalSession();
   const { data } = await supabase.auth.getSession();
   const user = data?.session?.user;
-  if (!user) return null;
-  return {
+  if (!user) {
+    // Supabase session not yet restored -- fall back to localStorage cache
+    return getLocalSession();
+  }
+  const appUser: AppUser = {
     id: user.id,
     username: emailToUsername(user.email ?? ""),
     displayName: user.user_metadata?.display_name || emailToUsername(user.email ?? ""),
   };
+  cacheSession(appUser); // keep cache in sync
+  return appUser;
 }
 
 export function getSessionSync(): AppUser | null {
