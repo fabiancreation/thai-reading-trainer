@@ -2,6 +2,24 @@ import { supabase } from "./supabase";
 import { UserProgress } from "./data/types";
 import { getUserId } from "./user";
 
+/** Wait for Supabase auth session to be restored (max 3s) */
+async function waitForAuth(): Promise<boolean> {
+  if (!supabase) return false;
+  const { data } = await supabase.auth.getSession();
+  if (data?.session) return true;
+  // Session not ready yet -- wait for onAuthStateChange
+  return new Promise((resolve) => {
+    const timeout = setTimeout(() => resolve(false), 3000);
+    const { data: listener } = supabase!.auth.onAuthStateChange((_event, session) => {
+      if (session) {
+        clearTimeout(timeout);
+        listener.subscription.unsubscribe();
+        resolve(true);
+      }
+    });
+  });
+}
+
 const DEFAULT_PROGRESS: UserProgress = { done: [], srs: {}, activeGroups: [] };
 
 function storageKey(): string {
@@ -32,6 +50,9 @@ function localSave(pg: UserProgress, dk: boolean) {
 export async function loadProgress(): Promise<UserProgress> {
   const userId = getUserId();
   if (!supabase || userId === "anonymous") return localLoad().pg;
+  // Wait for auth session to be restored before querying (RLS needs auth.uid())
+  const hasAuth = await waitForAuth();
+  if (!hasAuth) return localLoad().pg;
   try {
     const { data } = await supabase
       .from("user_progress")
