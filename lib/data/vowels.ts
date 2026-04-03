@@ -18,7 +18,7 @@ export const VOWELS_BASIC: VowelItem[] = [
   { thai: "-\u0e2d", pb: "sara \u0254\u0254", en: "long /\u0254\u0254/ (law)", pos: "right", type: "vowel" },
   { thai: "\u0e40-\u0e32\u0e30", pb: "sara \u0254", en: "short /\u0254/", pos: "wrap", type: "vowel" },
   { thai: "\u0e40-\u0e2d", pb: "sara \u0259\u0259", en: "long /\u0259\u0259/ (fur)", pos: "left+right", type: "vowel" },
-  { thai: "\u0e40-\u0e34", pb: "sara \u0259", en: "short /\u0259/", pos: "left+above", type: "vowel" },
+  { thai: "\u0e40-\u0e2d\u0e30", pb: "sara \u0259", en: "short /\u0259/", pos: "wrap", type: "vowel" },
 ];
 
 export const VOWELS_DIPHT: VowelItem[] = [
@@ -27,7 +27,7 @@ export const VOWELS_DIPHT: VowelItem[] = [
   { thai: "-\u0e31\u0e27", pb: "sara uua", en: "long /uua/", pos: "above+right", type: "vowel" },
   { thai: "-\u0e27\u0e30", pb: "sara ua", en: "short /ua/", pos: "right", type: "vowel" },
   { thai: "\u0e40-\u0e37\u0e2d", pb: "sara \u0289\u0289a", en: "long /\u0289\u0289a/", pos: "wrap", type: "vowel" },
-  { thai: "\u0e40-\u0e34\u0e2d\u0e30", pb: "sara \u0289a", en: "short /\u0289a/", pos: "wrap", type: "vowel" },
+  { thai: "\u0e40-\u0e37\u0e2d\u0e30", pb: "sara \u0289a", en: "short /\u0289a/", pos: "wrap", type: "vowel" },
 ];
 
 export const VOWELS_SPECIAL: VowelItem[] = [

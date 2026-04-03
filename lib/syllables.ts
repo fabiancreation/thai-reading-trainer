@@ -22,14 +22,14 @@ export const VOWEL_SOUND_MAP: Record<string, string> = {
   "-\u0e2d": "\u0254\u0254",       // -อ
   "\u0e40-\u0e32\u0e30": "\u0254", // เ-าะ
   "\u0e40-\u0e2d": "\u0259\u0259", // เ-อ
-  "\u0e40-\u0e34": "\u0259",       // เ-ิ (sara ə)
+  "\u0e40-\u0e2d\u0e30": "\u0259", // เ-อะ (sara ə)
   // Diphthongs
   "\u0e40-\u0e35\u0e22": "iia",                    // เ-ีย
   "\u0e40-\u0e35\u0e22\u0e30": "ia",               // เ-ียะ
   "-\u0e31\u0e27": "uua",                           // -ัว
   "-\u0e27\u0e30": "ua",                             // -วะ
   "\u0e40-\u0e37\u0e2d": "\u0289\u0289a",           // เ-ือ
-  "\u0e40-\u0e34\u0e2d\u0e30": "\u0289a",           // เ-ิอะ
+  "\u0e40-\u0e37\u0e2d\u0e30": "\u0289a",           // เ-ือะ
   // Special (excluding standalone ฤ ฦ)
   "\u0e44-": "ai",           // ไ-
   "\u0e43-": "ai",           // ใ-
