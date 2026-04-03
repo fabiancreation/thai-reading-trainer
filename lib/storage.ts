@@ -2,16 +2,21 @@ import { supabase } from "./supabase";
 import { UserProgress } from "./data/types";
 import { getUserId } from "./user";
 
+/** Cached auth readiness -- once true, stays true for the session */
+let authReady = false;
+
 /** Wait for Supabase auth session to be restored (max 3s) */
 async function waitForAuth(): Promise<boolean> {
+  if (authReady) return true;
   if (!supabase) return false;
   const { data } = await supabase.auth.getSession();
-  if (data?.session) return true;
+  if (data?.session) { authReady = true; return true; }
   // Session not ready yet -- wait for onAuthStateChange
   return new Promise((resolve) => {
-    const timeout = setTimeout(() => resolve(false), 3000);
+    const timeout = setTimeout(() => { resolve(false); }, 3000);
     const { data: listener } = supabase!.auth.onAuthStateChange((_event, session) => {
       if (session) {
+        authReady = true;
         clearTimeout(timeout);
         listener.subscription.unsubscribe();
         resolve(true);
@@ -50,7 +55,6 @@ function localSave(pg: UserProgress, dk: boolean) {
 export async function loadProgress(): Promise<UserProgress> {
   const userId = getUserId();
   if (!supabase || userId === "anonymous") return localLoad().pg;
-  // Wait for auth session to be restored before querying (RLS needs auth.uid())
   const hasAuth = await waitForAuth();
   if (!hasAuth) return localLoad().pg;
   try {
@@ -75,6 +79,11 @@ export async function saveProgress(progress: UserProgress, dark: boolean): Promi
   const userId = getUserId();
   localSave(progress, dark);
   if (!supabase || userId === "anonymous") return;
+  // Must have auth for RLS to allow the upsert
+  if (!authReady) {
+    const hasAuth = await waitForAuth();
+    if (!hasAuth) return; // localStorage is the fallback
+  }
   try {
     await supabase.from("user_progress").upsert({
       user_id: userId,
@@ -92,6 +101,8 @@ export async function saveProgress(progress: UserProgress, dark: boolean): Promi
 export async function loadDarkMode(): Promise<boolean> {
   const userId = getUserId();
   if (!supabase || userId === "anonymous") return localLoad().dk;
+  const hasAuth = await waitForAuth();
+  if (!hasAuth) return localLoad().dk;
   try {
     const { data } = await supabase
       .from("user_progress")
