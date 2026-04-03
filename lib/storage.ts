@@ -63,14 +63,17 @@ export async function loadProgress(): Promise<UserProgress> {
       .select("completed_lessons, srs_cards, active_groups, preferences")
       .eq("user_id", userId)
       .single();
-    if (!data) return localLoad().pg;
+    if (!data) { console.log("[load] No data from Supabase, falling back to local"); return localLoad().pg; }
+    const srsKeys = Object.keys(data.srs_cards || {}).length;
+    console.log("[load] Supabase OK, srsKeys:", srsKeys, "userId:", userId);
     return {
       done: data.completed_lessons || [],
       srs: data.srs_cards || {},
       activeGroups: data.active_groups || [],
       streak: (data.preferences as Record<string, unknown>)?.streak as UserProgress["streak"],
     };
-  } catch {
+  } catch (e) {
+    console.error("[load] Exception:", e);
     return localLoad().pg;
   }
 }
@@ -85,16 +88,18 @@ export async function saveProgress(progress: UserProgress, dark: boolean): Promi
     if (!hasAuth) return; // localStorage is the fallback
   }
   try {
-    await supabase.from("user_progress").upsert({
+    const { error } = await supabase.from("user_progress").upsert({
       user_id: userId,
       completed_lessons: progress.done,
       srs_cards: progress.srs,
       active_groups: progress.activeGroups,
       preferences: { dark, streak: progress.streak },
       updated_at: new Date().toISOString(),
-    });
-  } catch {
-    // local storage is the fallback
+    }, { onConflict: "user_id" });
+    if (error) console.error("[save] Supabase error:", error.message, "userId:", userId, "srsKeys:", Object.keys(progress.srs).length);
+    else console.log("[save] OK, srsKeys:", Object.keys(progress.srs).length);
+  } catch (e) {
+    console.error("[save] Exception:", e);
   }
 }
 
